@@ -1,4 +1,4 @@
-# Drum Pattern Classification
+   # Drum Style Classification
 
 This repository contains the code for our NLP final project, **Drumbeats as Language: Evaluating General-Purpose LLMs for Drum Style Classification**.
 
