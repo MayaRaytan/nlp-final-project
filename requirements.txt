@@ -1,0 +1,20 @@
+# Core dependencies
+pandas>=1.5.0
+numpy>=1.21.0
+scikit-learn>=1.1.0
+torch>=2.0.0
+transformers>=4.43.3
+datasets>=2.20.0
+accelerate>=0.33.0
+peft>=0.11.1
+
+# Data processing
+mido>=1.2.0
+pathlib2>=2.3.0
+
+# Utilities
+tqdm>=4.64.0
+rapidfuzz>=3.0.0
+openpyxl>=3.0.0
+
+# torch-audio>=2.0.0
