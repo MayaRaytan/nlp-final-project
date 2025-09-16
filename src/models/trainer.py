@@ -72,8 +72,8 @@ class ModelTrainer:
         return "\n".join(lines[s:] + lines[:s]) if s else "\n".join(lines)
         
     def build_augmented_train(self, df: pd.DataFrame, labels: List[str], 
-                            cap_per_class: int = 120, aug_per_sample: int = 1, 
-                            phase_shifts: int = 16) -> pd.DataFrame:
+                        cap_per_class: int = 120, aug_per_sample: int = 1, 
+                        phase_shifts: int = 16, crop_len: int = 64) -> pd.DataFrame:
         """Build augmented training dataset - matches notebook logic exactly."""
         out = []
         for lab in labels:
@@ -87,7 +87,7 @@ class ModelTrainer:
                 shifts = [0] + [np.random.randint(0, phase_shifts) for _ in range(aug_per_sample)]
                 for sh in shifts:
                     out.append({
-                        "text": self.rotate_lines(base_txt, shift=sh, crop=self.config.crop_len),
+                        "text": self.rotate_lines(base_txt, shift=sh, crop=crop_len),
                         "label": lab
                     })
         return pd.DataFrame(out).sample(frac=1.0, random_state=self.seed).reset_index(drop=True)
@@ -231,7 +231,7 @@ class ModelTrainer:
             lr_scheduler_type=self.config.lr_scheduler_type,
             logging_steps=50,
             save_total_limit=1,
-            evaluation_strategy="epoch",
+            eval_strategy="epoch",
             save_strategy="no",
             bf16=use_bf16,
             fp16=not use_bf16,

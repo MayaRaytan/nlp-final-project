@@ -118,7 +118,7 @@ def make_balanced_augmented_train(df_train: pd.DataFrame,
         df_train: Training dataframe with 'text' and 'label' columns
         target_per_label: Target number of samples per label
         inflate_factor: Factor to inflate the maximum class size
-        seed: Random seed for reproducibility
+        seed: Random seed for reproducibility (not used, kept for compatibility)
         
     Returns:
         Balanced dataframe with original and augmented samples

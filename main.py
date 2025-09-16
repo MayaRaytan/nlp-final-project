@@ -55,7 +55,7 @@ def main():
             df_train,
             target_per_label=1000,
             inflate_factor=None,
-            seed=42  # Match notebook seeding
+            seed=42
         )
     else:
         print("Skipping data augmentation")
@@ -84,7 +84,7 @@ def main():
         output_root=training_output
     )
     
-    # Create training summary table (matches notebook)
+    # Create training summary table
     print("Creating training summary table...")
     summary_path = training_output / "sweep_summary.csv"
     create_summary_table(training_output, summary_path)

@@ -3,7 +3,7 @@ pandas>=1.5.0
 numpy>=1.21.0
 scikit-learn>=1.1.0
 torch>=2.0.0
-transformers>=4.43.3
+transformers==4.43.3
 datasets>=2.20.0
 accelerate>=0.33.0
 peft>=0.11.1

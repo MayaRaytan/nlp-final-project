@@ -12,6 +12,8 @@ import re
 import random
 import subprocess
 import sys
+import urllib.request
+import ssl
 from pathlib import Path
 from collections import defaultdict, Counter
 from typing import Dict, List, Tuple, Optional
@@ -37,42 +39,49 @@ class DataProcessor:
         self.data_text_path = self.repo_path / "data_text"
         self.min_count = config.get('min_count', 70)
         
-        random.seed(0)
-
-    @staticmethod
-    def download_gmd_dataset():
+        # Set seeds to match notebook
+        random.seed(0)  # Initial seed like notebook
+        
+    def download_gmd_dataset(self):
         """Download the Groove MIDI Dataset if not present."""
         zip_path = Path("./data/groove-v1.0.0-midionly.zip")
-
+        
         if not zip_path.exists():
             print("Downloading Groove MIDI Dataset...")
             try:
-                # Use wget if available, otherwise use urllib
-                result = subprocess.run([
-                    "wget", "-q",
-                    "https://storage.googleapis.com/magentadata/datasets/groove/groove-v1.0.0-midionly.zip",
-                    "-O", str(zip_path)
-                ], capture_output=True, text=True)
-
-                if result.returncode != 0:
-                    # Fallback to urllib
-                    import urllib.request
-                    print("wget failed, using urllib...")
-                    urllib.request.urlretrieve(
-                        "https://storage.googleapis.com/magentadata/datasets/groove/groove-v1.0.0-midionly.zip",
-                        str(zip_path)
-                    )
+                # Create SSL context that doesn't verify certificates (for macOS compatibility)
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                
+                url = "https://storage.googleapis.com/magentadata/datasets/groove/groove-v1.0.0-midionly.zip"
+                print(f"Downloading from: {url}")
+                
+                # Use urllib.request.urlopen with SSL context instead of urlretrieve
+                request = urllib.request.Request(url)
+                with urllib.request.urlopen(request, context=ssl_context) as response:
+                    with open(zip_path, 'wb') as f:
+                        shutil.copyfileobj(response, f)
+                        
                 print("Dataset downloaded successfully")
             except Exception as e:
                 print(f"Failed to download dataset: {e}")
                 raise
         else:
             print("Dataset already exists")
-
+            
     def download_drums_repo(self):
-        """Clone the drums-with-llm repository if not present."""
-        if not self.repo_path.exists():
-            print("Cloning drums-with-llm repository...")
+        """Clone the drums-with-llm repository if not present or incomplete."""
+        source_dir = self.repo_path / "source"
+        
+        # Check if repository exists and has the required source directory
+        if not self.repo_path.exists() or not source_dir.exists():
+            if self.repo_path.exists():
+                print("Repository exists but is incomplete (missing source directory). Re-cloning...")
+                shutil.rmtree(self.repo_path)
+            else:
+                print("Cloning drums-with-llm repository...")
+            
             try:
                 result = subprocess.run([
                     "git", "clone", 
@@ -83,12 +92,17 @@ class DataProcessor:
                 if result.returncode != 0:
                     print(f"Git clone failed: {result.stderr}")
                     raise RuntimeError("Failed to clone drums-with-llm repository")
+                
+                # Verify the source directory exists after cloning
+                if not source_dir.exists():
+                    raise RuntimeError("Repository cloned but source directory is missing")
+                    
                 print("Repository cloned successfully")
             except Exception as e:
                 print(f"Failed to clone repository: {e}")
                 raise
         else:
-            print("Repository already exists")
+            print("Repository already exists and appears complete")
             
     def extract_dataset(self):
         """Extract the GMD dataset if not already extracted."""
@@ -98,13 +112,10 @@ class DataProcessor:
             print("Extracting dataset...")
             self.gmd_root.mkdir(exist_ok=True)
             try:
-                result = subprocess.run([
-                    "unzip", "-q", str(zip_path), "-d", str(self.gmd_root)
-                ], capture_output=True, text=True)
-                
-                if result.returncode != 0:
-                    print(f"Unzip failed: {result.stderr}")
-                    raise RuntimeError("Failed to extract dataset")
+                # Use Python's zipfile instead of unzip command
+                import zipfile
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(self.gmd_root)
                 print("Dataset extracted successfully")
             except Exception as e:
                 print(f"Failed to extract dataset: {e}")
@@ -146,7 +157,9 @@ class DataProcessor:
             flat_name = f"{pref}__{p.name}"
             dest = self.flat_dir / flat_name
             try:
-                os.symlink(p, dest)
+                # Create symlink with relative path that works from the flat directory
+                relative_path = os.path.relpath(p, self.flat_dir)
+                os.symlink(relative_path, dest)
             except Exception:
                 shutil.copy2(p, dest)
             rel2flat[str(rel)] = flat_name
@@ -174,7 +187,11 @@ class DataProcessor:
                         link.unlink()
                 os.symlink(str(target), str(link))
                 
-        ensure_symlink(self.repo_path / 'data_midi', self.flat_dir)
+        # Create symlink with correct relative path
+        # From source directory, ../data_midi should point to ../../gmd_flat_hashed
+        # So from repo directory, data_midi should point to ../gmd_flat_hashed
+        relative_target = Path("../gmd_flat_hashed")
+        ensure_symlink(self.repo_path / 'data_midi', relative_target)
         print("Repo wired. data_midi ->", os.readlink(self.repo_path / 'data_midi'))
         
     def run_tokenization(self):
