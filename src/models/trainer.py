@@ -231,7 +231,7 @@ class ModelTrainer:
             lr_scheduler_type=self.config.lr_scheduler_type,
             logging_steps=50,
             save_total_limit=1,
-            eval_strategy="epoch",
+            evaluation_strategy="epoch",
             save_strategy="no",
             bf16=use_bf16,
             fp16=not use_bf16,
