@@ -199,9 +199,10 @@ class ModelTrainer:
                 
         collator = PadCollator(tok.pad_token_id)
         
-        # Load model
+        # Load model - fix for Google Colab FP16 gradient scaling issues
         use_bf16 = torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8
-        dtype = torch.bfloat16 if use_bf16 else torch.float16
+        # Use float32 as fallback instead of float16 to avoid gradient scaling issues in Colab
+        dtype = torch.bfloat16 if use_bf16 else torch.float32
         
         base = AutoModelForCausalLM.from_pretrained(
             model_id, torch_dtype=dtype, low_cpu_mem_usage=True, trust_remote_code=True,
@@ -238,7 +239,7 @@ class ModelTrainer:
             evaluation_strategy="epoch",
             save_strategy="no",
             bf16=use_bf16,
-            fp16=not use_bf16,
+            fp16=False,  # Disable FP16 to avoid gradient scaling issues in Google Colab
             gradient_checkpointing=True,
             remove_unused_columns=False,
             report_to="none",
