@@ -72,19 +72,23 @@ class ModelTrainer:
         return "\n".join(lines[s:] + lines[:s]) if s else "\n".join(lines)
         
     def build_augmented_train(self, df: pd.DataFrame, labels: List[str], 
-                        cap_per_class: int = 120, aug_per_sample: int = 1, 
-                        phase_shifts: int = 16, crop_len: int = 64) -> pd.DataFrame:
+                        crop_len: int = 64) -> pd.DataFrame:
         """Build augmented training dataset - matches notebook logic exactly."""
+        # Constants from notebook
+        CAP_PER_CLASS = 120
+        AUG_PER_SAMPLE = 1
+        PHASE_SHIFTS = 16
+        
         out = []
         for lab in labels:
             sub = df[df.label == lab]
             if len(sub) == 0: 
                 continue
-            need = max(cap_per_class, len(sub))
+            need = max(CAP_PER_CLASS, len(sub))
             idx = np.random.choice(len(sub), size=need, replace=True)
             for i in idx:
                 base_txt = sub.iloc[i]["text"]
-                shifts = [0] + [np.random.randint(0, phase_shifts) for _ in range(aug_per_sample)]
+                shifts = [0] + [np.random.randint(0, PHASE_SHIFTS) for _ in range(AUG_PER_SAMPLE)]
                 for sh in shifts:
                     out.append({
                         "text": self.rotate_lines(base_txt, shift=sh, crop=crop_len),
@@ -240,6 +244,7 @@ class ModelTrainer:
             report_to="none",
             group_by_length=self.config.group_by_len,
             label_smoothing_factor=self.config.label_smooth,
+            max_grad_norm=1.0,  # Fix FP16 gradient scaling issue
         )
         
         # Trainer
