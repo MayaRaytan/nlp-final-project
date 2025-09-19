@@ -244,7 +244,8 @@ class ModelTrainer:
             report_to="none",
             group_by_length=self.config.group_by_len,
             label_smoothing_factor=self.config.label_smooth,
-            max_grad_norm=1.0,  # Fix FP16 gradient scaling issue
+            dataloader_pin_memory=False,  # Disable pin memory to fix FP16 gradient scaling in Colab
+            max_grad_norm=None,  # Disable gradient clipping to avoid FP16 scaling issues
         )
         
         # Trainer
