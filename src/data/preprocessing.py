@@ -56,7 +56,7 @@ class DataProcessor:
                 url = "https://storage.googleapis.com/magentadata/datasets/groove/groove-v1.0.0-midionly.zip"
                 print(f"Downloading from: {url}")
                 
-                # Use urllib.request.urlopen with SSL context instead of urlretrieve
+                # Use urllib.request.urlopen with SSL context
                 request = urllib.request.Request(url)
                 with urllib.request.urlopen(request, context=ssl_context) as response:
                     with open(zip_path, 'wb') as f:
