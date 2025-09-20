@@ -1,0 +1,16 @@
+# Core dependencies
+transformers>=4.43.3
+peft>=0.11.1
+accelerate>=0.33.0
+datasets>=2.20.0
+rapidfuzz
+scikit-learn
+tqdm
+
+# Data processing 
+mido
+
+# Standard libraries
+pandas
+numpy
+torch
