@@ -20,8 +20,8 @@ class AugConfig:
     apply_n_ops: tuple = (1, 3)  # randomly apply 1..3 ops per sample
 
 
-# Global RNG to match notebook exactly
-RNG = np.random.default_rng(42)  # reproducible - matches notebook
+# Global RNG
+RNG = np.random.default_rng(42)  # reproducible
 
 
 def _tokens(text: str):
@@ -118,7 +118,7 @@ def make_balanced_augmented_train(df_train: pd.DataFrame,
         df_train: Training dataframe with 'text' and 'label' columns
         target_per_label: Target number of samples per label
         inflate_factor: Factor to inflate the maximum class size
-        seed: Random seed for reproducibility (not used, kept for compatibility)
+        seed: Random seed for reproducibility
         
     Returns:
         Balanced dataframe with original and augmented samples
@@ -159,7 +159,7 @@ def make_balanced_augmented_train(df_train: pd.DataFrame,
         rows.append(pd.DataFrame(aug_rows))
     
     out = pd.concat(rows, ignore_index=True)
-    # Shuffle for training - use same random state as notebook
+    # Shuffle for training
     out = out.sample(frac=1.0, random_state=123).reset_index(drop=True)
     
     print("Class counts after balancing (train):")
