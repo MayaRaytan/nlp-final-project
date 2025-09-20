@@ -51,7 +51,7 @@ class ModelTrainer:
         self._set_seeds()
         
     def _set_seeds(self):
-        """Set random seeds to match notebook exactly."""
+        """Set random seeds"""
         random.seed(self.seed)
         np.random.seed(self.seed)
         torch.manual_seed(self.seed)
@@ -244,9 +244,7 @@ class ModelTrainer:
             remove_unused_columns=False,
             report_to="none",
             group_by_length=self.config.group_by_len,
-            label_smoothing_factor=self.config.label_smooth,
-            dataloader_pin_memory=False,  # Disable pin memory to fix FP16 gradient scaling in Colab
-            max_grad_norm=None,  # Disable gradient clipping to avoid FP16 scaling issues
+            label_smoothing_factor=self.config.label_smooth
         )
         
         # Trainer
@@ -304,7 +302,7 @@ def run_training_sweep(models: List[str], configs: List[Dict], df_train: pd.Data
         for cfg_dict in configs:
             try:
                 config = TrainingConfig(**cfg_dict)
-                trainer = ModelTrainer(config, seed=42)  # Match notebook seed
+                trainer = ModelTrainer(config, seed=42)
                 
                 run_name = f'{model_id.split("/")[-1]}__L{config.max_len}_C{config.crop_len}_r{config.lora_r}_ls{config.label_smooth}_gbl{int(config.group_by_len)}'
                 run_dir = output_root / run_name
