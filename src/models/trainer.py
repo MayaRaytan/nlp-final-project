@@ -72,23 +72,19 @@ class ModelTrainer:
         return "\n".join(lines[s:] + lines[:s]) if s else "\n".join(lines)
         
     def build_augmented_train(self, df: pd.DataFrame, labels: List[str], 
-                        crop_len: int = 64) -> pd.DataFrame:
+                        cap_per_class: int = 120, aug_per_sample: int = 1, 
+                        phase_shifts: int = 16, crop_len: int = 64) -> pd.DataFrame:
         """Build augmented training dataset - matches notebook logic exactly."""
-        # Constants from notebook
-        CAP_PER_CLASS = 120
-        AUG_PER_SAMPLE = 1
-        PHASE_SHIFTS = 16
-        
         out = []
         for lab in labels:
             sub = df[df.label == lab]
             if len(sub) == 0: 
                 continue
-            need = max(CAP_PER_CLASS, len(sub))
+            need = max(cap_per_class, len(sub))
             idx = np.random.choice(len(sub), size=need, replace=True)
             for i in idx:
                 base_txt = sub.iloc[i]["text"]
-                shifts = [0] + [np.random.randint(0, PHASE_SHIFTS) for _ in range(AUG_PER_SAMPLE)]
+                shifts = [0] + [np.random.randint(0, phase_shifts) for _ in range(aug_per_sample)]
                 for sh in shifts:
                     out.append({
                         "text": self.rotate_lines(base_txt, shift=sh, crop=crop_len),
@@ -199,10 +195,9 @@ class ModelTrainer:
                 
         collator = PadCollator(tok.pad_token_id)
         
-        # Load model - fix for Google Colab FP16 gradient scaling issues
+        # Load model
         use_bf16 = torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 8
-        # Use float32 as fallback instead of float16 to avoid gradient scaling issues in Colab
-        dtype = torch.bfloat16 if use_bf16 else torch.float32
+        dtype = torch.bfloat16 if use_bf16 else torch.float16
         
         base = AutoModelForCausalLM.from_pretrained(
             model_id, torch_dtype=dtype, low_cpu_mem_usage=True, trust_remote_code=True,
@@ -239,14 +234,12 @@ class ModelTrainer:
             evaluation_strategy="epoch",
             save_strategy="no",
             bf16=use_bf16,
-            fp16=False,  # Disable FP16 to avoid gradient scaling issues in Google Colab
+            fp16=not use_bf16,
             gradient_checkpointing=True,
             remove_unused_columns=False,
             report_to="none",
             group_by_length=self.config.group_by_len,
             label_smoothing_factor=self.config.label_smooth,
-            dataloader_pin_memory=False,  # Disable pin memory to fix FP16 gradient scaling in Colab
-            max_grad_norm=None,  # Disable gradient clipping to avoid FP16 scaling issues
         )
         
         # Trainer
