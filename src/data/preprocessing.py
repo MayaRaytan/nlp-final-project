@@ -111,7 +111,6 @@ class DataProcessor:
             print("Extracting dataset...")
             self.gmd_root.mkdir(exist_ok=True)
             try:
-                # Use Python's zipfile instead of unzip command
                 import zipfile
                 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                     zip_ref.extractall(self.gmd_root)
