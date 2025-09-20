@@ -39,8 +39,7 @@ class DataProcessor:
         self.data_text_path = self.repo_path / "data_text"
         self.min_count = config.get('min_count', 70)
         
-        # Set seeds to match notebook
-        random.seed(0)  # Initial seed like notebook
+        random.seed(0)
         
     def download_gmd_dataset(self):
         """Download the Groove MIDI Dataset if not present."""
