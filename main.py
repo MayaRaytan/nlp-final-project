@@ -81,7 +81,8 @@ def main():
         df_dev=df_dev,
         df_test=df_test,
         labels=labels,
-        output_root=training_output
+        output_root=training_output,
+        use_augmentation=use_augmentation
     )
     
     # Create training summary table

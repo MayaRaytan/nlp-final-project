@@ -72,11 +72,10 @@ class ModelTrainer:
         return "\n".join(lines[s:] + lines[:s]) if s else "\n".join(lines)
         
     def build_augmented_train(self, df: pd.DataFrame, labels: List[str], 
-                        crop_len: int = 64) -> pd.DataFrame:
-        """Build augmented training dataset - matches notebook logic exactly."""
-        # Constants from notebook
+                        crop_len: int = 64, use_augmentation: bool = True) -> pd.DataFrame:
+        """Build augmented training dataset."""
         CAP_PER_CLASS = 120
-        AUG_PER_SAMPLE = 1
+        AUG_PER_SAMPLE = 1 if not use_augmentation else 2
         PHASE_SHIFTS = 16
         
         out = []
@@ -130,7 +129,7 @@ class ModelTrainer:
         }
         
     def train_model(self, model_id: str, df_train: pd.DataFrame, df_dev: pd.DataFrame, 
-                   labels: List[str], output_dir: Path) -> Dict[str, Any]:
+                   labels: List[str], output_dir: Path, use_augmentation: bool = True) -> Dict[str, Any]:
         """
         Train a single model configuration.
         
@@ -155,7 +154,8 @@ class ModelTrainer:
         
         label_list = sorted(list(labels))
         df_train_aug = self.build_augmented_train(df_train, labels=label_list, 
-                                                crop_len=self.config.crop_len)
+                                                crop_len=self.config.crop_len, 
+                                                use_augmentation=use_augmentation)
         
         # Load tokenizer and model
         tok = AutoTokenizer.from_pretrained(model_id, use_fast=True, trust_remote_code=True)
@@ -285,7 +285,7 @@ class ModelTrainer:
 
 def run_training_sweep(models: List[str], configs: List[Dict], df_train: pd.DataFrame, 
                       df_dev: pd.DataFrame, df_test: pd.DataFrame, labels: List[str], 
-                      output_root: Path) -> None:
+                      output_root: Path, use_augmentation: bool = True) -> None:
     """
     Run training sweep across multiple models and configurations.
     
@@ -309,7 +309,7 @@ def run_training_sweep(models: List[str], configs: List[Dict], df_train: pd.Data
                 run_name = f'{model_id.split("/")[-1]}__L{config.max_len}_C{config.crop_len}_r{config.lora_r}_ls{config.label_smooth}_gbl{int(config.group_by_len)}'
                 run_dir = output_root / run_name
                 
-                trainer.train_model(model_id, df_train, df_dev, labels, run_dir)
+                trainer.train_model(model_id, df_train, df_dev, labels, run_dir, use_augmentation)
                 
             except Exception as e:
                 print(f"\n[SKIP] {model_id} cfg={cfg_dict} due to error:")
