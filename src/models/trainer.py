@@ -238,7 +238,7 @@ class ModelTrainer:
             eval_strategy="epoch",
             save_strategy="no",
             bf16=use_bf16,
-            fp16=False,  # Disable FP16 to avoid gradient scaling issues in Google Colab
+            fp16=not use_bf16,
             gradient_checkpointing=True,
             remove_unused_columns=False,
             report_to="none",
